@@ -1,3 +1,6 @@
+const queryParams = new URLSearchParams(window.location.search);
+const isEmbedMode = queryParams.get('embed') === '1';
+
 const form = document.getElementById('qa-form');
 const questionInput = document.getElementById('question');
 const statusEl = document.getElementById('status');
@@ -20,12 +23,32 @@ function setStatus(text, type = 'muted') {
 }
 
 function renderMarkdown(markdown) {
-  if (!markdown) {
-    answerEl.innerHTML = '<p class="muted">暂无内容</p>';
-    return;
-  }
-  const html = marked.parse(markdown, { breaks: true });
-  answerEl.innerHTML = html;
+  const aiBubble = answerEl.querySelector('.bubble.ai');
+  if (!aiBubble) return;
+  const content = markdown || '暂无内容';
+  aiBubble.innerHTML = marked.parse(content, { breaks: true });
+  aiBubble.classList.remove('typing');
+}
+
+function renderConversation(question) {
+  answerEl.innerHTML = '';
+
+  const userRow = document.createElement('div');
+  userRow.className = 'chat-row user';
+  const userBubble = document.createElement('div');
+  userBubble.className = 'bubble user';
+  userBubble.textContent = question;
+  userRow.appendChild(userBubble);
+
+  const aiRow = document.createElement('div');
+  aiRow.className = 'chat-row ai';
+  const aiBubble = document.createElement('div');
+  aiBubble.className = 'bubble ai typing';
+  aiBubble.innerHTML = `<span class="dot"></span><span class="dot"></span><span class="dot"></span>`;
+  aiRow.appendChild(aiBubble);
+
+  answerEl.appendChild(userRow);
+  answerEl.appendChild(aiRow);
 }
 
 async function handleSubmit(event) {
@@ -34,7 +57,9 @@ async function handleSubmit(event) {
   if (!question) return;
 
   submitBtn.disabled = true;
+  questionInput.value = '';
   setStatus('正在请求接口...');
+  renderConversation(question);
 
   const formData = new FormData();
   formData.append('question', question);
@@ -77,9 +102,10 @@ function fillDemo() {
 }
 
 function refreshEmbedSnippet() {
+  if (!embedCodeEl || !embedPreview || isEmbedMode) return;
   const base = `${window.location.origin}${window.location.pathname}`;
   const question = questionInput.value.trim() || '在这里输入问题';
-  const params = new URLSearchParams({ question, autofetch: '1' });
+  const params = new URLSearchParams({ question, embed: '1' });
   const src = `${base}?${params.toString()}`;
   const iframe = `<iframe src="${src}" style="width:100%;max-width:720px;height:480px;border:1px solid #e5e7eb;border-radius:12px;" title="RAG助手"></iframe>`;
 
@@ -88,26 +114,35 @@ function refreshEmbedSnippet() {
 }
 
 function prefillFromQuery() {
-  const params = new URLSearchParams(window.location.search);
-  const presetQuestion = params.get('question');
-  const auto = params.get('autofetch');
+  const presetQuestion = queryParams.get('question');
 
   if (presetQuestion) {
     questionInput.value = presetQuestion;
   }
 
   refreshEmbedSnippet();
-
-  if (presetQuestion && auto) {
-    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-  }
 }
 
+function applyEmbedMode() {
+  if (!isEmbedMode) return;
+  document.body.classList.add('embed-mode');
+}
+
+applyEmbedMode();
+
 form.addEventListener('submit', handleSubmit);
-copyBtn.addEventListener('click', () => copyTextFromElement(answerEl));
-fillDemoBtn.addEventListener('click', fillDemo);
-refreshEmbedBtn.addEventListener('click', refreshEmbedSnippet);
-copyEmbedBtn.addEventListener('click', () => copyTextFromElement(embedCodeEl));
+if (copyBtn) {
+  copyBtn.addEventListener('click', () => copyTextFromElement(answerEl));
+}
+if (fillDemoBtn) {
+  fillDemoBtn.addEventListener('click', fillDemo);
+}
+if (refreshEmbedBtn) {
+  refreshEmbedBtn.addEventListener('click', refreshEmbedSnippet);
+}
+if (copyEmbedBtn) {
+  copyEmbedBtn.addEventListener('click', () => copyTextFromElement(embedCodeEl));
+}
 
 questionInput.addEventListener('input', () => setStatus('等待提交'));
 
