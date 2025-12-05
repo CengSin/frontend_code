@@ -81,7 +81,7 @@ function refreshEmbedSnippet() {
   const question = questionInput.value.trim() || '在这里输入问题';
   const params = new URLSearchParams({ question, autofetch: '1' });
   const src = `${base}?${params.toString()}`;
-  const iframe = `<iframe src="${src}" style="width:100%;max-width:720px;height:480px;border:1px solid rgba(255,255,255,0.12);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.25);background:#0d0f12;" title="RAG助手" loading="lazy"></iframe>`;
+  const iframe = `<iframe src="${src}" style="width:100%;max-width:720px;height:480px;border:1px solid #e5e7eb;border-radius:12px;" title="RAG助手"></iframe>`;
 
   embedCodeEl.value = iframe;
   embedPreview.src = src;
@@ -98,7 +98,7 @@ function prefillFromQuery() {
 
   refreshEmbedSnippet();
 
-  if (presetQuestion && auto === '1') {
+  if (presetQuestion && auto) {
     form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
   }
 }
